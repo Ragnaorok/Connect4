@@ -267,12 +267,10 @@ while not game_over:
 	# # Ask for Player 2 Input
 	if turn == AI and not game_over:				
 
-		#col = random.randint(0, COLUMN_COUNT-1)
-		#col = pick_best_move(board, AI_PIECE)
-		col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
+	
+		col, minimax_score = minimax(board, 6, -math.inf, math.inf, True)
 
 		if is_valid_location(board, col):
-			#pygame.time.wait(500)
 			row = get_next_open_row(board, col)
 			drop_piece(board, row, col, AI_PIECE)
 
@@ -291,7 +289,7 @@ while not game_over:
 		pygame.time.wait(3000)
 
 def main():
-	cProfile.run('minimax(board, 5, -math.inf, math.inf, True)')
+	cProfile.run('minimax(board, 6, -math.inf, math.inf, True)')
 	cProfile.run('winning_move(board, PLAYER_PIECE)')
 	cProfile.run('score_position(board, AI_PIECE)')
 
