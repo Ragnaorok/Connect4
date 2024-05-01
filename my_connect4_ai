@@ -22,8 +22,6 @@ AI_PIECE = 2
 
 WINDOW_LENGTH = 4
 
-
-
 def create_board():
 	board = np.zeros((ROW_COUNT,COLUMN_COUNT))
 	return board
@@ -43,7 +41,7 @@ def print_board(board):
 	print(np.flip(board, 0))
 
 def winning_move(board, piece):
-    # Check horizontal and vertical wins
+    # Check horizontal 
     for r in range(ROW_COUNT):
         for c in range(COLUMN_COUNT - 3):
             if board[r][c] == piece and \
@@ -51,6 +49,7 @@ def winning_move(board, piece):
                board[r][c+2] == piece and \
                board[r][c+3] == piece:
                 return True
+	# Check vertical
         for c in range(COLUMN_COUNT):
             if r <= ROW_COUNT - 4 and \
                board[r][c] == piece and \
@@ -59,18 +58,16 @@ def winning_move(board, piece):
                board[r+3][c] == piece:
                 return True
 
-    # Check positively sloped and negatively sloped diagonals
+    # Check positively sloped diagonals
     for r in range(ROW_COUNT - 3):
         for c in range(COLUMN_COUNT - 3):
-            if board[r][c] == piece and \
-               board[r+1][c+1] == piece and \
-               board[r+2][c+2] == piece and \
-               board[r+3][c+3] == piece:
+            if all(board[r + i][c + i] == piece for i in range(WINDOW_LENGTH)):
                 return True
-            if board[r+3][c] == piece and \
-               board[r+2][c+1] == piece and \
-               board[r+1][c+2] == piece and \
-               board[r][c+3] == piece:
+
+    # Check negatively sloped diagonals
+    for r in range(3, ROW_COUNT):
+        for c in range(COLUMN_COUNT - 3):
+            if all(board[r - i][c + i] == piece for i in range(WINDOW_LENGTH)):
                 return True
 
     return False
@@ -140,22 +137,22 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
     if depth == 0 or is_terminal:
         if is_terminal:
             if winning_move(board, AI_PIECE):
-                return (None, 100000000000000)
+                return (None, float('inf'))  
             elif winning_move(board, PLAYER_PIECE):
-                return (None, -10000000000000)
-            else: # Game is over, no more valid moves
+                return (None, float('-inf'))
+            else:  
                 return (None, 0)
-        else: # Depth is zero
+        else:  # Depth is zero
             return (None, score_position(board, AI_PIECE))
-    
+
     if maximizingPlayer:
-        value = -math.inf
+        value = float('-inf')
         best_col = random.choice(valid_locations)
         for col in valid_locations:
             row = get_next_open_row(board, col)
             b_copy = board.copy()
             drop_piece(b_copy, row, col, AI_PIECE)
-            _, new_score = minimax(b_copy, depth-1, alpha, beta, False)
+            new_col, new_score = minimax(b_copy, depth - 1, alpha, beta, False)
             if new_score > value:
                 value = new_score
                 best_col = col
@@ -164,20 +161,31 @@ def minimax(board, depth, alpha, beta, maximizingPlayer):
                 break
         return best_col, value
     else:
-        value = math.inf
+        value = float('inf')
         best_col = random.choice(valid_locations)
         for col in valid_locations:
             row = get_next_open_row(board, col)
             b_copy = board.copy()
             drop_piece(b_copy, row, col, PLAYER_PIECE)
-            _, new_score = minimax(b_copy, depth-1, alpha, beta, True)
+            new_col, new_score = minimax(b_copy, depth - 1, alpha, beta, True)
             if new_score < value:
                 value = new_score
                 best_col = col
             beta = min(beta, value)
-            if alpha >= beta:
+            if beta <= alpha:
                 break
         return best_col, value
+
+def iterative_deepening(board, max_depth):
+    best_move = None
+    best_score = float('-inf')
+    for depth in range(1, max_depth + 1):
+        move, score = minimax(board, depth, float('-inf'), float('inf'), True)
+        if score > best_score:
+            best_score = score
+            best_move = move
+            print(f"Depth: {depth}, Best Move: {best_move}, Score: {best_score}")
+    return best_move
 
 
 def get_valid_locations(board):
@@ -256,7 +264,7 @@ while not game_over:
 
 		if event.type == pygame.MOUSEBUTTONDOWN:
 			pygame.draw.rect(screen, BLACK, (0,0, width, SQUARESIZE))
-			#print(event.pos)
+			print(event.pos)
 			# Ask for Player 1 Input
 			if turn == PLAYER:
 				posx = event.pos[0]
@@ -281,15 +289,12 @@ while not game_over:
 	# # Ask for Player 2 Input
 	if turn == AI and not game_over:				
 
-		#col = random.randint(0, COLUMN_COUNT-1)
-		#col = pick_best_move(board, AI_PIECE)
-		col, minimax_score = minimax(board, 5, -math.inf, math.inf, True)
+		col = iterative_deepening(board, 8)
 
-		if is_valid_location(board, col):
-			#pygame.time.wait(500)
+		if col is not None and is_valid_location(board, col):
 			row = get_next_open_row(board, col)
 			drop_piece(board, row, col, AI_PIECE)
-
+ 
 			if winning_move(board, AI_PIECE):
 				label = myfont.render("Player 2 wins!!", 1, YELLOW)
 				screen.blit(label, (40,10))
@@ -305,7 +310,7 @@ while not game_over:
 		pygame.time.wait(3000)
 
 def main():
-	cProfile.run('minimax(board, 5, -math.inf, math.inf, True)')
+	cProfile.run('iterative_deepening(board, 8)')
 	cProfile.run('winning_move(board, PLAYER_PIECE)')
 	cProfile.run('score_position(board, AI_PIECE)')
 
