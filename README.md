@@ -10,9 +10,7 @@ Pip (Python package installer) <br>
 
 ### Dependencies 
 Install the required Python packages using pip:
-```
-bash
-```
+
 ```
 pip install pygame numpy
 ```
